@@ -65,24 +65,74 @@ Rules:
 - Never add any explanation outside the JSON.
 """
 
-# ====================== RISK SCORING ======================
 def calculate_risk_score(intent, entities):
+
+    # -------------------------
+    # Base risk
+    # -------------------------
     score = 30
+
+    recipient = entities.get("recipient")
+
+    # -------------------------
+    # High amount risk
+    # -------------------------
     if intent == "send_money":
+
         amount = float(entities.get("amount") or 0)
+
         if amount > 10000:
             score += 30
-        if entities.get("urgency") and "urgent" in str(entities["urgency"]).lower():
+
+        # Urgency risk
+        urgency = str(entities.get("urgency") or "").lower()
+
+        if "urgent" in urgency:
             score += 20
+
+    # -------------------------
+    # Document verification risk
+    # -------------------------
     if intent == "verify_document":
+
         doc = str(entities.get("document_type") or "").lower()
+
         if "land" in doc or "title" in doc:
             score += 25
-    if not entities.get("recipient"):
+
+    # -------------------------
+    # Missing recipient risk
+    # -------------------------
+    if not recipient:
         score += 15
+
+    # -------------------------
+    # Service / transport risk
+    # -------------------------
     if intent in ["get_airport_transfer", "hire_service"]:
         score += 10
-    return min(max(score, 0), 100)
+
+    # -------------------------
+    # Returning customer logic
+    # Reduce by 2 per previous task
+    # Minimum risk = 40
+    # -------------------------
+    if recipient:
+
+        previous_tasks = Task.query.filter(
+            Task.entities["recipient"].as_string() == recipient
+        ).count()
+
+        reduction = previous_tasks * 2
+
+        score -= reduction
+
+    # -------------------------
+    # Risk boundaries
+    # -------------------------
+    score = max(40, min(score, 100))
+
+    return score
 
 # ====================== HELPERS ======================
 def sync_task_code(messages, task_code):
