@@ -11,6 +11,12 @@
 </head>
 <body>
 
+<!-- ===== AI BACKGROUND LAYER ===== -->
+<canvas id="neural-bg"></canvas>
+<div class="orb orb1"></div>
+<div class="orb orb2"></div>
+<div class="orb orb3"></div>
+
 <!-- ===== HEADER ===== -->
 <header class="site-header">
     <div class="header-inner">
@@ -43,9 +49,11 @@
     </div>
 </section>
 
-<!-- ===== REQUEST FORM ===== -->
+<!-- ===== MAIN ===== -->
 <main class="main-content">
-    <div class="request-card" id="requestCard">
+
+    <!-- REQUEST CARD -->
+    <div class="request-card glass-card" id="requestCard">
         <div class="request-card-header">
             <span class="request-card-icon">✍️</span>
             <div>
@@ -53,12 +61,14 @@
                 <p>Type your request in plain English — be as specific as you like.</p>
             </div>
         </div>
-        <textarea
-            id="userInput"
-            placeholder="e.g. I need to send KES 15,000 to my mother in Kisumu urgently."
-            rows="4"
-            oninput="autoResize(this)"
-        ></textarea>
+        <div class="textarea-wrap">
+            <textarea
+                id="userInput"
+                placeholder="e.g. I need to send KES 15,000 to my mother in Kisumu urgently."
+                rows="4"
+                oninput="autoResize(this)"
+            ></textarea>
+        </div>
         <div class="char-hint" id="charHint">Start typing your request above…</div>
         <button class="submit-btn" id="submitBtn" onclick="submitRequest()">
             <span id="btnText">Submit Request</span>
@@ -66,8 +76,8 @@
         </button>
     </div>
 
-    <!-- ===== RESULT PANEL (hidden until task created) ===== -->
-    <div class="result-panel hidden" id="resultPanel">
+    <!-- RESULT PANEL -->
+    <div class="result-panel glass-card hidden" id="resultPanel">
         <div class="result-panel-top">
             <div class="result-success-icon">✅</div>
             <div>
@@ -80,9 +90,9 @@
         <div class="result-meta" id="resultMeta"></div>
 
         <div class="message-tabs">
-            <button class="tab-btn active" data-tab="whatsapp" onclick="switchTab(this, 'whatsapp')">💬 WhatsApp</button>
-            <button class="tab-btn" data-tab="email" onclick="switchTab(this, 'email')">📧 Email</button>
-            <button class="tab-btn" data-tab="sms" onclick="switchTab(this, 'sms')">📱 SMS</button>
+            <button class="tab-btn active" data-tab="whatsapp" onclick="switchTab(this,'whatsapp')">💬 WhatsApp</button>
+            <button class="tab-btn" data-tab="email" onclick="switchTab(this,'email')">📧 Email</button>
+            <button class="tab-btn" data-tab="sms" onclick="switchTab(this,'sms')">📱 SMS</button>
         </div>
 
         <div class="tab-content">
@@ -102,10 +112,10 @@
         </div>
     </div>
 
-    <!-- ===== TOAST ===== -->
+    <!-- TOAST -->
     <div class="toast hidden" id="toast"></div>
 
-    <!-- ===== DASHBOARD ===== -->
+    <!-- DASHBOARD -->
     <section class="dashboard-section">
         <div class="dashboard-header">
             <div>
@@ -116,7 +126,7 @@
         </div>
 
         {% if tasks %}
-        <div class="tasks-table-wrapper" id="tasksGrid">
+        <div class="tasks-table-wrapper glass-card" id="tasksGrid">
             <table class="tasks-table">
                 <thead>
                     <tr>
@@ -143,10 +153,10 @@
                         <td>
                             <div class="status-cell">
                                 <span class="status-dot status-{{ task.status | lower | replace(' ', '-') }}"></span>
-                                <select class="status-select" onchange="updateStatus('{{ task.task_code }}', this.value, this)">
-                                    <option value="Pending" {{ 'selected' if task.status == 'Pending' else '' }}>Pending</option>
+                                <select class="status-select" onchange="updateStatus('{{ task.task_code }}', this.value)">
+                                    <option value="Pending"     {{ 'selected' if task.status == 'Pending'     else '' }}>Pending</option>
                                     <option value="In Progress" {{ 'selected' if task.status == 'In Progress' else '' }}>In Progress</option>
-                                    <option value="Completed" {{ 'selected' if task.status == 'Completed' else '' }}>Completed</option>
+                                    <option value="Completed"   {{ 'selected' if task.status == 'Completed'   else '' }}>Completed</option>
                                 </select>
                             </div>
                         </td>
@@ -156,7 +166,7 @@
             </table>
         </div>
         {% else %}
-        <div class="empty-state">
+        <div class="empty-state glass-card">
             <div class="empty-icon">📭</div>
             <h3>No tasks yet</h3>
             <p>Submit your first request above to get started.</p>
@@ -165,23 +175,97 @@
     </section>
 </main>
 
-<!-- ===== FOOTER ===== -->
+<!-- FOOTER -->
 <footer class="site-footer">
     <p>© 2026 Vunoh Global · Built for the Kenyan diaspora</p>
 </footer>
 
+<!-- ===== SCRIPTS ===== -->
 <script>
-// ===== EXAMPLE FILLS =====
-const examples = {
-    send_money:       "I need to send KES 15,000 to my mother in Kisumu urgently.",
-    hire_service:     "Can someone clean my apartment in Westlands on Friday?",
-    verify_document:  "Please verify my land title deed for the plot in Karen, Nairobi.",
-    airport_transfer: "I need an airport transfer from JKIA to Westlands on Saturday morning for 2 people."
+/* ──────────────────────────────────────────
+   NEURAL MESH BACKGROUND
+   Animated particle network — pure Canvas API
+   ────────────────────────────────────────── */
+(function () {
+    const canvas = document.getElementById('neural-bg');
+    const ctx    = canvas.getContext('2d');
+    let W, H, particles, raf;
+    const LINK_DIST = 130;
+
+    function resize() {
+        W = canvas.width  = window.innerWidth;
+        H = canvas.height = window.innerHeight;
+        initParticles();
+    }
+
+    function initParticles() {
+        particles = [];
+        const N = Math.min(Math.floor((W * H) / 13000), 90);
+        for (let i = 0; i < N; i++) {
+            particles.push({
+                x  : Math.random() * W,
+                y  : Math.random() * H,
+                vx : (Math.random() - 0.5) * 0.32,
+                vy : (Math.random() - 0.5) * 0.32,
+                r  : Math.random() * 1.6 + 0.4,
+                a  : Math.random() * 0.5 + 0.15
+            });
+        }
+    }
+
+    function tick() {
+        ctx.clearRect(0, 0, W, H);
+
+        for (let i = 0; i < particles.length; i++) {
+            const p = particles[i];
+            p.x = (p.x + p.vx + W) % W;
+            p.y = (p.y + p.vy + H) % H;
+
+            /* draw connections */
+            for (let j = i + 1; j < particles.length; j++) {
+                const q  = particles[j];
+                const dx = p.x - q.x;
+                const dy = p.y - q.y;
+                const d  = Math.sqrt(dx * dx + dy * dy);
+                if (d < LINK_DIST) {
+                    const alpha = (1 - d / LINK_DIST) * 0.14;
+                    ctx.beginPath();
+                    ctx.moveTo(p.x, p.y);
+                    ctx.lineTo(q.x, q.y);
+                    ctx.strokeStyle = `rgba(0,201,122,${alpha})`;
+                    ctx.lineWidth   = 0.6;
+                    ctx.stroke();
+                }
+            }
+
+            /* draw dot */
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(0,201,122,${p.a})`;
+            ctx.fill();
+        }
+
+        raf = requestAnimationFrame(tick);
+    }
+
+    resize();
+    tick();
+    window.addEventListener('resize', () => { cancelAnimationFrame(raf); resize(); tick(); });
+})();
+
+/* ──────────────────────────────────────────
+   EXAMPLE QUICK-FILLS
+   ────────────────────────────────────────── */
+const EXAMPLES = {
+    send_money      : 'I need to send KES 15,000 to my mother in Kisumu urgently.',
+    hire_service    : 'Can someone clean my apartment in Westlands on Friday?',
+    verify_document : 'Please verify my land title deed for the plot in Karen, Nairobi.',
+    airport_transfer: 'I need an airport transfer from JKIA to Westlands on Saturday morning for 2 people.'
 };
 
 function fillExample(key) {
     const ta = document.getElementById('userInput');
-    ta.value = examples[key];
+    ta.value = EXAMPLES[key];
     autoResize(ta);
     updateCharHint(ta.value);
     ta.focus();
@@ -197,14 +281,16 @@ function updateCharHint(val) {
     const hint = document.getElementById('charHint');
     if (!val.trim()) {
         hint.textContent = 'Start typing your request above…';
-        hint.style.color = 'var(--text-muted)';
+        hint.style.color = '';
     } else {
-        hint.textContent = `${val.trim().split(/\s+/).length} words`;
+        hint.textContent = val.trim().split(/\s+/).length + ' words';
         hint.style.color = 'var(--accent)';
     }
 }
 
-// ===== SUBMIT =====
+/* ──────────────────────────────────────────
+   SUBMIT REQUEST
+   ────────────────────────────────────────── */
 async function submitRequest() {
     const msg = document.getElementById('userInput').value.trim();
     if (!msg) { showToast('Please describe your request first.', 'warn'); return; }
@@ -215,17 +301,16 @@ async function submitRequest() {
     btn.disabled = true;
 
     try {
-        const res = await fetch('/process', {
-            method: 'POST',
+        const res  = await fetch('/process', {
+            method : 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message: msg })
+            body   : JSON.stringify({ message: msg })
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Server error');
 
-        const t = data.task;
-        showResult(t);
-        addTaskCardToGrid(t);
+        showResult(data.task);
+        addTaskRow(data.task);
         updateDashStats();
         document.getElementById('userInput').value = '';
         autoResize(document.getElementById('userInput'));
@@ -239,37 +324,35 @@ async function submitRequest() {
     }
 }
 
-// ===== RESULT PANEL =====
+/* ──────────────────────────────────────────
+   RESULT PANEL
+   ────────────────────────────────────────── */
 let currentMsgs = {};
 
 function showResult(t) {
     currentMsgs = t.messages;
-    document.getElementById('resultCode').textContent = 'Task Code: ' + t.task_code;
+    document.getElementById('resultCode').textContent   = 'Task Code: ' + t.task_code;
     document.getElementById('msg-whatsapp').textContent = t.messages.whatsapp;
-    document.getElementById('msg-email').textContent = t.messages.email;
-    document.getElementById('msg-sms').textContent = t.messages.sms;
+    document.getElementById('msg-email').textContent    = t.messages.email;
+    document.getElementById('msg-sms').textContent      = t.messages.sms;
 
-    const smsLen = t.messages.sms.length;
-    document.getElementById('smsCounter').textContent = smsLen + '/160 characters' + (smsLen > 160 ? ' ⚠️ Over limit' : '');
+    const sLen = t.messages.sms.length;
+    document.getElementById('smsCounter').textContent   =
+        sLen + '/160 characters' + (sLen > 160 ? ' ⚠️ Over limit' : '');
 
-    const riskClass = t.risk_score >= 70 ? 'high' : t.risk_score >= 40 ? 'medium' : 'low';
+    const rc = t.risk_score >= 70 ? 'high' : t.risk_score >= 40 ? 'medium' : 'low';
     document.getElementById('resultMeta').innerHTML = `
         <span class="meta-pill">📋 ${t.intent.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase())}</span>
-        <span class="meta-pill risk-pill-${riskClass}">⚠️ Risk: ${t.risk_score}%</span>
-        <span class="meta-pill">🔄 ${t.status}</span>
-    `;
+        <span class="meta-pill risk-pill-${rc}">⚠️ Risk: ${t.risk_score}%</span>
+        <span class="meta-pill">🔄 ${t.status}</span>`;
 
     const panel = document.getElementById('resultPanel');
     panel.classList.remove('hidden');
     panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-
-    // reset tabs
     switchTabByName('whatsapp');
 }
 
-function closeResult() {
-    document.getElementById('resultPanel').classList.add('hidden');
-}
+function closeResult() { document.getElementById('resultPanel').classList.add('hidden'); }
 
 function switchTab(btn, name) {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -279,133 +362,157 @@ function switchTab(btn, name) {
 }
 
 function switchTabByName(name) {
-    document.querySelectorAll('.tab-btn').forEach(b => {
-        b.classList.toggle('active', b.dataset.tab === name);
-    });
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
     document.querySelectorAll('.tab-pane').forEach(p => p.classList.add('hidden'));
     document.getElementById('tab-' + name).classList.remove('hidden');
 }
 
-function copyMsg(channel) {
-    navigator.clipboard.writeText(currentMsgs[channel]).then(() => {
-        showToast('Copied to clipboard!', 'success');
-    });
+function copyMsg(ch) {
+    navigator.clipboard.writeText(currentMsgs[ch]).then(() => showToast('Copied!', 'success'));
 }
 
-// ===== STATUS UPDATE =====
-async function updateStatus(taskCode, newStatus, selectEl) {
+/* ──────────────────────────────────────────
+   STATUS UPDATE
+   ────────────────────────────────────────── */
+async function updateStatus(taskCode, newStatus) {
     try {
-        const res = await fetch('/update_status', {
-            method: 'POST',
+        const res  = await fetch('/update_status', {
+            method : 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ task_code: taskCode, status: newStatus })
+            body   : JSON.stringify({ task_code: taskCode, status: newStatus })
         });
         const data = await res.json();
         if (data.success) {
-            showToast(`Status updated to "${newStatus}"`, 'success');
-            // update status dot in table row
+            showToast(`Status → "${newStatus}"`, 'success');
             const row = document.getElementById('card-' + taskCode);
             if (row) {
-                const dot = row.querySelector('.status-dot');
-                dot.className = 'status-dot status-' + newStatus.toLowerCase().replace(' ', '-');
+                row.querySelector('.status-dot').className =
+                    'status-dot status-' + newStatus.toLowerCase().replace(' ', '-');
             }
+            const active = document.querySelector('#dashStats .stat-pill.active');
+            if (active && active.dataset.filter && active.dataset.filter !== 'all')
+                applyFilter(active.dataset.filter);
             updateDashStats();
         } else {
-            showToast('Failed to update status.', 'error');
+            showToast('Update failed.', 'error');
         }
-    } catch {
-        showToast('Network error updating status.', 'error');
-    }
+    } catch { showToast('Network error.', 'error'); }
 }
 
-// ===== ADD TASK ROW DYNAMICALLY =====
-function addTaskCardToGrid(t) {
-    const emptyState = document.querySelector('.empty-state');
-    if (emptyState) {
-        // Replace empty state with table
+/* ──────────────────────────────────────────
+   ADD TASK ROW DYNAMICALLY
+   ────────────────────────────────────────── */
+function addTaskRow(t) {
+    /* If empty state exists, swap it for a full table */
+    const empty = document.querySelector('.empty-state');
+    if (empty) {
+        empty.remove();
         const section = document.querySelector('.dashboard-section');
-        emptyState.remove();
-        const wrapper = document.createElement('div');
-        wrapper.className = 'tasks-table-wrapper';
-        wrapper.id = 'tasksGrid';
-        wrapper.innerHTML = `
+        const wrap    = document.createElement('div');
+        wrap.className = 'tasks-table-wrapper glass-card';
+        wrap.id        = 'tasksGrid';
+        wrap.innerHTML = `
             <table class="tasks-table">
-                <thead>
-                    <tr>
-                        <th>Task Code</th>
-                        <th>Intent</th>
-                        <th>Risk</th>
-                        <th>Assigned To</th>
-                        <th>Created</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
+                <thead><tr>
+                    <th>Task Code</th><th>Intent</th><th>Risk</th>
+                    <th>Assigned To</th><th>Created</th><th>Status</th>
+                </tr></thead>
                 <tbody id="tasksTableBody"></tbody>
             </table>`;
-        section.appendChild(wrapper);
+        section.appendChild(wrap);
     }
 
-    const riskClass = t.risk_score >= 70 ? 'high' : t.risk_score >= 40 ? 'medium' : 'low';
-    const now = new Date().toLocaleString('en-GB', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
-    const intentLabel = t.intent.replace(/_/g,' ').replace(/\b\w/g, c => c.toUpperCase());
-    const employee = t.employee_category || '—';
+    const rc   = t.risk_score >= 70 ? 'high' : t.risk_score >= 40 ? 'medium' : 'low';
+    const now  = new Date().toLocaleString('en-GB', {
+        day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit'
+    });
+    const lbl  = t.intent.replace(/_/g,' ').replace(/\b\w/g, c => c.toUpperCase());
+    const emp  = t.employee_category || '—';
 
     const tbody = document.getElementById('tasksTableBody') || document.querySelector('.tasks-table tbody');
-    const row = document.createElement('tr');
-    row.className = `risk-${riskClass}`;
-    row.id = `card-${t.task_code}`;
+    const row   = document.createElement('tr');
+    row.className = 'risk-' + rc;
+    row.id        = 'card-' + t.task_code;
+    row.style.animation = 'rowSlide 0.35s ease';
     row.innerHTML = `
         <td><span class="task-code-badge">${t.task_code}</span></td>
-        <td><span class="intent-label">${intentLabel}</span></td>
-        <td><span class="risk-badge risk-${riskClass}">${t.risk_score}%</span></td>
-        <td><span class="employee-label">${employee}</span></td>
+        <td><span class="intent-label">${lbl}</span></td>
+        <td><span class="risk-badge risk-${rc}">${t.risk_score}%</span></td>
+        <td><span class="employee-label">${emp}</span></td>
         <td><span class="date-label">${now}</span></td>
-        <td>
-            <div class="status-cell">
-                <span class="status-dot status-pending"></span>
-                <select class="status-select" onchange="updateStatus('${t.task_code}', this.value, this)">
-                    <option value="Pending" selected>Pending</option>
-                    <option value="In Progress">In Progress</option>
-                    <option value="Completed">Completed</option>
-                </select>
-            </div>
-        </td>
-    `;
+        <td><div class="status-cell">
+            <span class="status-dot status-pending"></span>
+            <select class="status-select" onchange="updateStatus('${t.task_code}', this.value)">
+                <option value="Pending" selected>Pending</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Completed">Completed</option>
+            </select>
+        </div></td>`;
     if (tbody) tbody.prepend(row);
 }
 
-// ===== DASHBOARD STATS =====
-function updateDashStats() {
-    const rows = document.querySelectorAll('.tasks-table tbody tr');
-    const total = rows.length;
-    const pending = document.querySelectorAll('.status-dot.status-pending').length;
-    const inProgress = document.querySelectorAll('.status-dot.status-in-progress').length;
-    const completed = document.querySelectorAll('.status-dot.status-completed').length;
-
-    document.getElementById('dashStats').innerHTML = `
-        <span class="stat-pill">📋 ${total} Total</span>
-        <span class="stat-pill stat-pending">⏳ ${pending} Pending</span>
-        <span class="stat-pill stat-progress">🔄 ${inProgress} In Progress</span>
-        <span class="stat-pill stat-done">✅ ${completed} Done</span>
-    `;
+/* ──────────────────────────────────────────
+   FILTER
+   ────────────────────────────────────────── */
+function applyFilter(filter) {
+    document.querySelectorAll('.tasks-table tbody tr').forEach(row => {
+        const val = row.querySelector('.status-select')?.value || '';
+        row.style.display = (filter === 'all' || val === filter) ? '' : 'none';
+    });
+    const wrap = document.getElementById('tasksGrid');
+    if (!wrap) return;
+    wrap.querySelector('.filter-empty')?.remove();
+    const vis = [...document.querySelectorAll('.tasks-table tbody tr')].filter(r => r.style.display !== 'none').length;
+    if (!vis) {
+        const p = document.createElement('p');
+        p.className   = 'filter-empty';
+        p.textContent = `No tasks with status "${filter}".`;
+        wrap.appendChild(p);
+    }
 }
 
-// ===== TOAST =====
+function filterTasks(filter, btn) {
+    document.querySelectorAll('#dashStats .stat-pill').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    applyFilter(filter);
+}
+
+/* ──────────────────────────────────────────
+   DASHBOARD STATS
+   ────────────────────────────────────────── */
+function updateDashStats() {
+    const rows  = [...document.querySelectorAll('.tasks-table tbody tr')];
+    const total = rows.length;
+    const pen   = rows.filter(r => r.querySelector('.status-select')?.value === 'Pending').length;
+    const prog  = rows.filter(r => r.querySelector('.status-select')?.value === 'In Progress').length;
+    const done  = rows.filter(r => r.querySelector('.status-select')?.value === 'Completed').length;
+    const cur   = document.querySelector('#dashStats .stat-pill.active')?.dataset.filter || 'all';
+
+    document.getElementById('dashStats').innerHTML = `
+        <button class="stat-pill${cur==='all'?' active':''}"          data-filter="all"         onclick="filterTasks('all',this)">📋 ${total} Total</button>
+        <button class="stat-pill stat-pending${cur==='Pending'?' active':''}"     data-filter="Pending"     onclick="filterTasks('Pending',this)">⏳ ${pen} Pending</button>
+        <button class="stat-pill stat-progress${cur==='In Progress'?' active':''}" data-filter="In Progress" onclick="filterTasks('In Progress',this)">🔄 ${prog} In Progress</button>
+        <button class="stat-pill stat-done${cur==='Completed'?' active':''}"    data-filter="Completed"   onclick="filterTasks('Completed',this)">✅ ${done} Done</button>`;
+}
+
+/* ──────────────────────────────────────────
+   TOAST NOTIFICATIONS
+   ────────────────────────────────────────── */
 function showToast(msg, type = 'info') {
     const t = document.getElementById('toast');
     t.textContent = msg;
-    t.className = `toast toast-${type}`;
+    t.className   = `toast toast-${type}`;
     t.classList.remove('hidden');
-    clearTimeout(t._timer);
-    t._timer = setTimeout(() => t.classList.add('hidden'), 3500);
+    clearTimeout(t._t);
+    t._t = setTimeout(() => t.classList.add('hidden'), 3500);
 }
 
-// ===== INIT =====
+/* ──────────────────────────────────────────
+   INIT
+   ────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', () => {
     updateDashStats();
-    document.getElementById('userInput').addEventListener('input', function() {
-        autoResize(this);
-    });
+    document.getElementById('userInput').addEventListener('input', function () { autoResize(this); });
 });
 </script>
 </body>
