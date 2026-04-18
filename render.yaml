@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: vunoh-ai-assistant
+    name: Globconnect-ai-assistant
     runtime: python
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn app:app
