@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vunoh Global – AI Diaspora Assistant</title>
+    <title>GlobConnect – AI Diaspora Assistant</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
@@ -21,9 +21,9 @@
 <header class="site-header">
     <div class="header-inner">
         <div class="logo">
-            <span class="logo-mark">V</span>
+            <span class="logo-mark">G</span>
             <div>
-                <span class="logo-name">Vunoh Global</span>
+                <span class="logo-name">GlobConnect</span>
                 <span class="logo-tagline">AI Diaspora Assistant</span>
             </div>
         </div>
@@ -177,14 +177,13 @@
 
 <!-- FOOTER -->
 <footer class="site-footer">
-    <p>© 2026 Vunoh Global · Built for the Kenyan diaspora</p>
+    <p>© 2026 GlobConnect · Built for the Kenyan diaspora</p>
 </footer>
 
 <!-- ===== SCRIPTS ===== -->
 <script>
 /* ──────────────────────────────────────────
    NEURAL MESH BACKGROUND
-   Animated particle network — pure Canvas API
    ────────────────────────────────────────── */
 (function () {
     const canvas = document.getElementById('neural-bg');
@@ -221,7 +220,6 @@
             p.x = (p.x + p.vx + W) % W;
             p.y = (p.y + p.vy + H) % H;
 
-            /* draw connections */
             for (let j = i + 1; j < particles.length; j++) {
                 const q  = particles[j];
                 const dx = p.x - q.x;
@@ -238,7 +236,6 @@
                 }
             }
 
-            /* draw dot */
             ctx.beginPath();
             ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
             ctx.fillStyle = `rgba(0,201,122,${p.a})`;
@@ -403,7 +400,6 @@ async function updateStatus(taskCode, newStatus) {
    ADD TASK ROW DYNAMICALLY
    ────────────────────────────────────────── */
 function addTaskRow(t) {
-    /* If empty state exists, swap it for a full table */
     const empty = document.querySelector('.empty-state');
     if (empty) {
         empty.remove();
