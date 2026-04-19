@@ -275,7 +275,6 @@ The `entities` and `steps` columns store JSON. Flask-SQLAlchemy maps these to Py
 
 I used **Claude** (Anthropic) as a thinking partner throughout the project — to reason through the risk scoring model, to sanity-check the system prompt design, and to review edge cases in the JSON parsing logic. I used **Groq** as the inference backend because it offers a genuinely free tier with fast response times on LLaMA 3.3 70B, which handled JSON-mode outputs reliably.
 
-I did not use Copilot or autocomplete for the core logic files. The routes, the scoring function, and the system prompt were written by hand so I could reason through each line in an interview.
 
 ### System prompt design
 
@@ -283,11 +282,11 @@ The most important decision was making the system prompt output-schema-first rat
 
 I excluded few-shot examples from the system prompt because the schema is explicit enough that examples added length without improving reliability. At temperature 0.3, the model follows the schema consistently.
 
-### One decision where I overrode the AI
+### calculating risk score
 
 When I first tested the prompt, the AI was calculating a risk score inside the JSON response. The score it returned was reasonable but not explainable — it was a number with no audit trail. I removed the `risk_score` key from the JSON schema entirely and moved all scoring into `calculate_risk_score()` in Python. This means the score is deterministic, testable, and easy to explain. The AI should generate language and structure; risk decisions should be owned by code I control.
 
-### One thing that did not work as expected
+### syncing task code
 
 The task code consistency was a real problem. I passed the task code in the system prompt initially, but it was the same for every request (the example value I used during testing). When I moved the task code into the user-facing prompt as a variable, the model embedded it correctly about 80% of the time but missed it occasionally in the SMS message, which has a tight character budget. The `sync_task_code()` helper was added as a deterministic fallback: it checks all three messages after the AI responds and appends the task code to any message that is missing it. This is the kind of defensive layer that matters in production — you cannot rely on the model to be 100% consistent on formatting constraints.
 
@@ -325,4 +324,4 @@ Render auto-deploys on every push to the `main` branch. To deploy your own insta
 
 ---
 
-*GlobConnect — AI Internship 2026 · Built for the Kenyan diaspora*
+*GlobConnect — AI assistant 2026 · Built for the Kenyan diaspora*
