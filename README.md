@@ -159,7 +159,7 @@ validate_assignment() guards against unexpected employee category values
        ↓
 Task saved to SQLite via SQLAlchemy
        ↓
-Response returned to frontend — dashboard updates on next page load
+Response returned to frontend 
 ```
 
 ### Supported Intents
